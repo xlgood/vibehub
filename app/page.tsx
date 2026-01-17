@@ -9,7 +9,7 @@ import { Plus, Zap, Shuffle, Clock, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx } from "clsx";
 import { useVibe } from "@/context/VibeProvider";
-import { getVibes, createVibe } from "@/app/actions"; // 🌟 引入 Actions
+import { getVibes, createVibe } from "@/app/actions"; // 引入真接口
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'trending' | 'latest'>('trending');
@@ -20,44 +20,30 @@ export default function Home() {
   const [vibes, setVibes] = useState<CardProps[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🌟 加载数据
+  // 加载数据
   const loadData = async () => {
     setLoading(true);
-    const data = await getVibes(activeTab); // 调用 Server Action
+    const data = await getVibes(activeTab);
     setVibes(data);
     setLoading(false);
   };
 
-  // 当 Tab 切换或发帖成功时重新加载
   useEffect(() => {
     loadData();
   }, [activeTab]);
 
   const handlePublish = async (newData: { title: string; content: string; image: string; visibility: 'public' | 'private' }) => {
     if (!user) return;
-    
-    // 调用 Server Action 创建
-    await createVibe(user.id, {
-        title: newData.title,
-        content: newData.content,
-        image: newData.image,
-        visibility: newData.visibility
-    });
-
-    // 重新加载列表
-    loadData();
+    await createVibe(user.id, newData);
+    loadData(); // 刷新列表
   };
 
   return (
     <main className="min-h-screen pt-20 pb-20 bg-[#050505]">
       <Navbar />
-      
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
         
-        {/* Top Section */}
         <div className="flex flex-col md:flex-row gap-6 md:gap-12 mb-8">
-          
-          {/* Left: Forecast */}
           <div className="flex-1">
              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                <Zap size={14} className="text-vibe-fire" /> Global Energy
@@ -65,7 +51,6 @@ export default function Home() {
              <VibeForecast />
           </div>
 
-          {/* Right: Actions */}
           <div className="flex flex-col gap-4 justify-end md:w-64">
             <button 
               onClick={() => {
@@ -94,7 +79,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Feed Grid */}
+        {/* 🌟 使用 vibes 状态渲染 */}
         {loading ? (
              <div className="flex justify-center py-20">
                  <Loader2 className="animate-spin text-vibe-fire" size={40} />
@@ -123,13 +108,10 @@ export default function Home() {
             </AnimatePresence>
             </div>
         )}
-
       </div>
-
       <AnimatePresence>
          {showCreateModal && <CreateVibeModal onClose={() => setShowCreateModal(false)} onPublish={handlePublish} />}
       </AnimatePresence>
-
     </main>
   );
 }
