@@ -7,9 +7,8 @@ import { motion } from "framer-motion";
 import { Grid, Zap, Check, MapPin, Loader2, MessageCircle } from "lucide-react";
 import { clsx } from "clsx";
 import VibeCard, { CardProps } from "@/components/VibeCard";
-import { getUserProfileData } from "@/app/actions"; // 引入真接口
+import { getUserProfileData } from "@/app/actions";
 
-// 定义本地用户类型
 interface UserProfile {
   username: string;
   handle: string;
@@ -37,6 +36,8 @@ export default function UserProfilePage() {
       if (data) {
         setProfileUser({
             ...data.user,
+            // 🌟 修复：如果 avatar 是 null，就转为空字符串
+            avatar: data.user.avatar || "",
             faction: data.user.faction || 'neutral'
         });
         setCards(data.vibes);
