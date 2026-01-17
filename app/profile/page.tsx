@@ -1,44 +1,40 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import VibeCard from "@/components/VibeCard"; // 确保路径正确
+import VibeCard from "@/components/VibeCard";
 import { useVibe } from "@/context/VibeProvider";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, LogOut, Grid, Lock, Edit2, Save, X, Camera, Loader2, Zap } from "lucide-react"; // 确保导入 Loader2
+import { Settings, Edit2, Save, X, Camera, Loader2, Zap, Grid, Lock } from "lucide-react";
 import { clsx } from "clsx";
 
-// Mock Data for Profile Cards (因为 VibeProvider 还没存卡片，我们先假装有一点)
+// 🌟 修复：ID改为字符串
 const MOCK_MY_CARDS = [
-  { id: 101, title: 'Secret Project', content: 'Hidden vibe.', image: 'https://picsum.photos/seed/secret/400/600', author: 'Me', avatar: '', initialBoost: 0, initialChill: 0, timestamp: Date.now(), visibility: 'private' as const },
-  { id: 102, title: 'Neon Nights', content: 'The city never sleeps.', image: 'https://picsum.photos/seed/88/400/600', author: 'Me', avatar: '', initialBoost: 85, initialChill: 12, timestamp: Date.now() - 100000, visibility: 'public' as const },
+  { id: '101', title: 'Secret Project', content: 'Hidden vibe.', image: 'https://picsum.photos/seed/secret/400/600', author: 'Me', avatar: '', initialBoost: 0, initialChill: 0, timestamp: Date.now(), visibility: 'private' as const },
+  { id: '102', title: 'Neon Nights', content: 'The city never sleeps.', image: 'https://picsum.photos/seed/88/400/600', author: 'Me', avatar: '', initialBoost: 85, initialChill: 12, timestamp: Date.now() - 100000, visibility: 'public' as const },
 ];
 
 export default function ProfilePage() {
-  const { user, updateUser, logout, isLoggedIn } = useVibe();
+  const { user, updateUser, isLoggedIn } = useVibe();
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public');
   const [editMode, setEditMode] = useState(false);
   
-  // Temp state for editing
   const [tempUsername, setTempUsername] = useState("");
   const [tempBio, setTempBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🌟 修复 1：如果未登录，跳转回首页 (或显示加载中)
   useEffect(() => {
-    // 简单的客户端路由保护
     const timer = setTimeout(() => {
        if (!isLoggedIn) {
           router.push("/login");
        }
-    }, 500); // 给一点缓冲时间让 Context 加载
+    }, 500); 
     return () => clearTimeout(timer);
   }, [isLoggedIn, router]);
 
-  // 🌟 修复 2：在 Effect 中增加 user 非空判断
   useEffect(() => {
     if (editMode && user) {
       setTempUsername(user.username);
@@ -47,10 +43,9 @@ export default function ProfilePage() {
   }, [editMode, user]);
 
   const handleSaveProfile = async () => {
-    if (!user) return; // 🌟 修复 3：防卫语句
+    if (!user) return;
 
     setIsSaving(true);
-    // Simulate API call
     await new Promise(r => setTimeout(r, 800));
     
     updateUser({
@@ -62,8 +57,6 @@ export default function ProfilePage() {
     setEditMode(false);
   };
 
-  // 🌟 修复 4：如果在渲染视图时 user 还是 null，显示 Loading
-  // 这能防止 return JSX 里的 user.avatar 报错
   if (!user) {
     return (
         <main className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -71,8 +64,6 @@ export default function ProfilePage() {
         </main>
     );
   }
-
-  // --- 以下是正常的渲染逻辑 (此时 user 一定存在) ---
 
   const myCards = MOCK_MY_CARDS.map(c => ({...c, author: user.username, avatar: user.avatar}));
   const filteredCards = myCards.filter(c => c.visibility === activeTab);
@@ -83,17 +74,13 @@ export default function ProfilePage() {
       
       <div className="max-w-5xl mx-auto px-6">
         
-        {/* Profile Header Card */}
         <div className="relative mb-12 p-8 rounded-3xl bg-white/5 border border-white/10 overflow-hidden group">
-          {/* Dynamic Background Glow */}
           <div className={clsx(
             "absolute top-0 right-0 w-96 h-96 blur-[120px] rounded-full pointer-events-none opacity-40 transition-colors duration-1000",
             user.faction === 'fire' ? "bg-vibe-fire" : user.faction === 'ice' ? "bg-vibe-ice" : "bg-purple-500"
           )} />
 
           <div className="relative z-10 flex flex-col md:flex-row items-start gap-8">
-            
-            {/* Avatar Section */}
             <div className="relative group/avatar">
                 <div className={clsx(
                     "w-32 h-32 rounded-full border-4 overflow-hidden bg-black shrink-0 shadow-2xl transition-all",
@@ -101,14 +88,8 @@ export default function ProfilePage() {
                 )}>
                     <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
                 </div>
-                {editMode && (
-                    <button className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer">
-                        <Camera size={24} />
-                    </button>
-                )}
             </div>
 
-            {/* Info Section */}
             <div className="flex-1 w-full">
               <div className="flex justify-between items-start">
                  <div className="space-y-2 w-full">
@@ -146,7 +127,6 @@ export default function ProfilePage() {
                     )}
                  </div>
 
-                 {/* Edit Actions */}
                  <div className="flex gap-2">
                     {editMode ? (
                         <>
@@ -169,7 +149,6 @@ export default function ProfilePage() {
                         <button 
                             onClick={() => setEditMode(true)}
                             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-                            title="Edit Profile"
                         >
                             <Edit2 size={18} />
                         </button>
@@ -180,7 +159,6 @@ export default function ProfilePage() {
                  </div>
               </div>
 
-              {/* Stats Row */}
               <div className="flex gap-6 mt-6 border-t border-white/5 pt-6">
                 <div>
                     <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Total Points</div>
@@ -192,17 +170,12 @@ export default function ProfilePage() {
                         {user.vibeScore}
                     </div>
                 </div>
-                <div>
-                    <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Cards</div>
-                    <div className="text-2xl font-mono font-bold text-white">{MOCK_MY_CARDS.length}</div>
-                </div>
               </div>
             </div>
 
           </div>
         </div>
 
-        {/* Content Tabs */}
         <div className="flex gap-6 mb-8 border-b border-white/10 pb-1">
             <button 
                 onClick={() => setActiveTab('public')}
@@ -224,7 +197,6 @@ export default function ProfilePage() {
             </button>
         </div>
 
-        {/* Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence mode="popLayout">
                 {filteredCards.length > 0 ? (
@@ -236,11 +208,13 @@ export default function ProfilePage() {
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.3 }}
                         >
+                            {/* 🌟 修复：disableProfileLink 类型匹配 */}
                             <VibeCard 
                                 data={card} 
                                 isOwner={true}
                                 onDelete={(id) => console.log("Delete", id)}
                                 onTogglePrivacy={(id) => console.log("Toggle Privacy", id)}
+                                disableProfileLink={true} 
                             />
                         </motion.div>
                     ))
