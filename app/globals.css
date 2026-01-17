@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* === 1. 在这里定义我们的品牌色和字体 (Tailwind v4 写法) === */
+@theme {
+  /* 颜色变量：代码里可以用 text-vibe-fire, bg-vibe-black 等 */
+  --color-vibe-black: #050505;
+  --color-vibe-dark: #0a0a0a;
+  --color-vibe-fire: #f97316;
+  --color-vibe-ice: #22d3ee;
+
+  /* 字体变量：映射到 layout.tsx 里的 Google Fonts */
+  --font-sans: var(--font-space), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  /* 自定义动画 */
+  --animate-float-up: floatUp 0.8s ease-out forwards;
+  --animate-pulse-fire: pulseFire 3s infinite;
+  --animate-pulse-ice: pulseIce 3s infinite;
+
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(1.5); }
+  }
+  @keyframes pulseFire {
+    0%, 100% { box-shadow: 0 0 25px rgba(249, 115, 22, 0.6); }
+    50% { box-shadow: 0 0 35px rgba(249, 115, 22, 0.8); }
+  }
+  @keyframes pulseIce {
+    0%, 100% { box-shadow: 0 0 25px rgba(34, 211, 238, 0.6); }
+    50% { box-shadow: 0 0 35px rgba(34, 211, 238, 0.8); }
+  }
+}
+
+/* === 2. 全局基础样式 === */
+:root {
+  --foreground-rgb: 229, 231, 235;
+  --background-start-rgb: 5, 5, 5;
+  --background-end-rgb: 5, 5, 5;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  /* 🌟 删除原来的 background 行，背景由 ThemeBackground 组件全权接管 */
+  font-family: var(--font-sans);
+  min-height: 100vh; /* 确保占满屏幕 */
+}
+
+/* 隐藏滚动条 */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 3D 翻转工具类 */
+@utility perspective-1000 { perspective: 1000px; }
+@utility transform-style-3d { transform-style: preserve-3d; }
+@utility backface-hidden { backface-visibility: hidden; }
+@utility rotate-y-180 { transform: rotateY(180deg); }
+
+
+/* === 3. 核心光晕特效系统 (自定义 CSS 类) === */
+
+/* Fire (Boost) 光晕等级 */
+.glow-fire-low { box-shadow: 0 0 5px rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.2); }
+.glow-fire-mid { box-shadow: 0 0 15px rgba(249, 115, 22, 0.4); border: 1px solid rgba(249, 115, 22, 0.5); }
+.glow-fire-high { 
+  box-shadow: 0 0 25px rgba(249, 115, 22, 0.6), 0 0 10px rgba(249, 115, 22, 0.8) inset; 
+  border: 1px solid rgba(249, 115, 22, 0.8); 
+  animation: var(--animate-pulse-fire); 
+}
+
+/* Ice (Chill) 光晕等级 */
+.glow-ice-low { box-shadow: 0 0 5px rgba(34, 211, 238, 0.2); border: 1px solid rgba(34, 211, 238, 0.2); }
+.glow-ice-mid { box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); border: 1px solid rgba(34, 211, 238, 0.5); }
+.glow-ice-high { 
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.6), 0 0 10px rgba(34, 211, 238, 0.8) inset; 
+  border: 1px solid rgba(34, 211, 238, 0.8); 
+  animation: var(--animate-pulse-ice); 
+}
+
+/* 零能量 (Neutral) */
+.glow-neutral { border: 1px solid rgba(255, 255, 255, 0.1); }
+.glow-neutral:hover { border: 1px solid rgba(255, 255, 255, 0.3); }

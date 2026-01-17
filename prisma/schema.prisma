@@ -1,0 +1,89 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// === 1. 用户模型 ===
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String?   @unique
+  avatar        String?
+  bio           String?   @default("Just checking the vibe.")
+  password      String    // 实际开发中需加密，MVP先存简单哈希或明文
+  createdAt     DateTime  @default(now())
+
+  // 核心数值系统
+  points        Int       @default(0)      // 积分：用于兑换 Vibe
+  fireVibe      Int       @default(0)      // 累积的 Fire (Boost) 能量
+  iceVibe       Int       @default(0)      // 累积的 Ice (Chill) 能量
+  
+  // 限制逻辑
+  lastLoginDate DateTime? // 用于判断"每日登录+10"
+  todayVoteCount Int      @default(0) // 用于判断"每日投票上限50分"
+  hasPostedToday Boolean  @default(false) // 用于判断"每日首发+50"
+
+  // 关联
+  cards         Card[]
+  votes         Vote[]
+  comments      Comment[]
+}
+
+// === 2. Vibe 卡片模型 ===
+model Card {
+  id          Int       @id @default(autoincrement())
+  title       String?   // 可选标题
+  content     String    // 主要文字内容
+  imageUrl    String?   // 图片地址
+  createdAt   DateTime  @default(now())
+  
+  // Vibe 统计
+  boostCount  Int       @default(0) // Fire 票数
+  chillCount  Int       @default(0) // Ice 票数
+  
+  // 最终计算结果 (用于快速排序和特效渲染)
+  // 逻辑: |boost - chill|
+  finalVibe   Int       @default(0) 
+  // 逻辑: boost >= chill ? 'fire' : 'ice'
+  vibeType    String    @default("neutral") // 'fire' | 'ice' | 'neutral'
+
+  // 关联
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  votes       Vote[]
+  comments    Comment[]
+}
+
+// === 3. 投票记录 (用于防止重复刷票) ===
+model Vote {
+  id        Int      @id @default(autoincrement())
+  type      String   // 'boost' | 'chill'
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  cardId    Int
+  card      Card     @relation(fields: [cardId], references: [id])
+
+  @@unique([userId, cardId]) // 保证每个用户对每张卡只能投一次(或只能持有一种立场)
+}
+
+// === 4. 评论模型 ===
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  cardId    Int
+  card      Card     @relation(fields: [cardId], references: [id])
+}
