@@ -1,36 +1,25 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { loginUser, getUserById, updateProfile as updateProfileServer } from '@/app/actions';
 
-// === 类型定义 ===
+// 定义与数据库一致的 User 接口
 interface UserData {
+  id: string; // 🌟 必须是 string
   username: string;
   handle: string;
-  avatar: string;
+  avatar: string; // 注意：Prisma Schema 里是可选的 (String?)，但这里我们尽量保证有默认值
   bio: string;
   points: number;
   vibeScore: number;
-  faction: 'fire' | 'ice' | 'neutral';
+  faction: string; // 'fire' | 'ice' | 'neutral'
   email: string;
 }
 
-// === 默认模拟用户 (登录后显示的数据) ===
-const MOCK_USER_DATA: UserData = {
-  username: "NeonDrifter",
-  handle: "@neon_drifter",
-  avatar: "https://i.pravatar.cc/150?u=1",
-  bio: "Chasing vibes in the digital void. 🌌",
-  points: 12540,
-  vibeScore: 98,
-  faction: "fire",
-  email: "neon@vibehub.ink"
-};
-
 interface VibeContextType {
-  user: UserData | null; // 🌟 未登录时为 null
+  user: UserData | null; 
   isLoggedIn: boolean;
-  login: (email: string, pass: string) => Promise<boolean>; // 模拟异步
-  signup: (data: Partial<UserData>) => Promise<boolean>;
+  login: (email: string) => Promise<boolean>; // 登录只需要邮箱
   logout: () => void;
   updateUser: (updates: Partial<UserData>) => void;
   addPoints: (amount: number) => void;
@@ -41,58 +30,71 @@ interface VibeContextType {
 const VibeContext = createContext<VibeContextType | undefined>(undefined);
 
 export function VibeProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserData | null>(null); // 默认未登录
+  const [user, setUser] = useState<UserData | null>(null);
   const [globalVibe, setGlobalVibe] = useState<'fire' | 'ice'>('fire');
 
-  // 🌟 检查本地存储 (模拟持久化登录)
+  // 🌟 初始化：检查 LocalStorage 是否有 userId，如果有，去服务器查最新数据
   useEffect(() => {
-    const stored = localStorage.getItem('vibe_auth');
-    if (stored === 'true') {
-      setUser(MOCK_USER_DATA);
-    }
+    const checkSession = async () => {
+      const storedUserId = localStorage.getItem('vibe_user_id');
+      if (storedUserId) {
+        const serverUser = await getUserById(storedUserId);
+        if (serverUser) {
+          // 转换 Prisma 数据为 Context 数据 (处理 null 值)
+          setUser({
+            ...serverUser,
+            handle: serverUser.handle || `@${serverUser.username}`,
+            avatar: serverUser.avatar || "",
+            bio: serverUser.bio || "",
+            faction: serverUser.faction || "neutral",
+          });
+        }
+      }
+    };
+    checkSession();
   }, []);
 
-  // === Auth Actions ===
-  const login = async (email: string, pass: string) => {
-    // 模拟网络延迟
-    await new Promise(r => setTimeout(r, 1000));
+  // 🌟 真实登录逻辑
+  const login = async (email: string) => {
+    if (!email) return false;
     
-    // 简单的模拟验证
-    if (email && pass) {
-      setUser(MOCK_USER_DATA); // 恢复模拟数据
-      localStorage.setItem('vibe_auth', 'true');
+    // 调用 Server Action
+    const serverUser = await loginUser(email);
+    
+    if (serverUser) {
+      setUser({
+        ...serverUser,
+        handle: serverUser.handle || `@${serverUser.username}`,
+        avatar: serverUser.avatar || "",
+        bio: serverUser.bio || "",
+        faction: serverUser.faction || "neutral",
+      });
+      // 简单的客户端持久化 (存 ID)
+      localStorage.setItem('vibe_user_id', serverUser.id);
       return true;
     }
     return false;
   };
 
-  const signup = async (data: Partial<UserData>) => {
-    await new Promise(r => setTimeout(r, 1500));
-    
-    // 创建新用户 (合并默认值)
-    const newUser = { 
-      ...MOCK_USER_DATA, 
-      username: data.username || "NewUser",
-      faction: data.faction || 'neutral',
-      points: 100, // 新用户初始积分
-      vibeScore: 0
-    };
-    setUser(newUser);
-    localStorage.setItem('vibe_auth', 'true');
-    return true;
-  };
-
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('vibe_auth');
-    // 可以选择在这里强制跳转首页，或者由组件处理
+    localStorage.removeItem('vibe_user_id');
     window.location.href = '/'; 
   };
 
-  // === Data Actions ===
-  const updateUser = (updates: Partial<UserData>) => {
+  const updateUser = async (updates: Partial<UserData>) => {
     if (!user) return;
+    
+    // 乐观更新前端
     setUser(prev => prev ? ({ ...prev, ...updates }) : null);
+
+    // 如果涉及资料修改，同步到服务器
+    if (updates.username || updates.bio) {
+       await updateProfileServer(user.id, {
+         username: updates.username || user.username,
+         bio: updates.bio || user.bio
+       });
+    }
   };
 
   const addPoints = (amount: number) => {
@@ -101,17 +103,7 @@ export function VibeProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <VibeContext.Provider value={{ 
-      user, 
-      isLoggedIn: !!user,
-      login, 
-      signup, 
-      logout,
-      updateUser, 
-      addPoints, 
-      globalVibe, 
-      setGlobalVibe 
-    }}>
+    <VibeContext.Provider value={{ user, isLoggedIn: !!user, login, logout, updateUser, addPoints, globalVibe, setGlobalVibe }}>
       {children}
     </VibeContext.Provider>
   );
